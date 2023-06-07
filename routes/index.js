@@ -24,7 +24,7 @@ router.get("/", (req, res, next) => {
   res.send(`
     <html>
       <body>
-        <h1> Hello, world! </h1>
+        <h1> FINAL PROJECT in progress </h1>
       </body>
     </html>
   `)
