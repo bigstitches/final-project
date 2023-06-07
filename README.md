@@ -28,13 +28,28 @@ AUTHENTICATION
 - Clubs can create events (CREATE), (UPDATE) and (DELETE)
 - Clubs can (UPDATE) their membership list
 - "ADMIN" (ARRL) can (CREATE) members and (CREATE) clubs and (POST) 
-CRUD ROUTES
-- Operators can search for events and add them to their own calendar (GET), 
-- Operators can (POST) make changes to their profile
-- Clubs can (GET) all membership requests and approve them
-- Clubs can (CREATE) create calendar events and (POST) update those events
-Indexes
-- 
+
+ROUTES (UPDATED):
+  CLUB (represents ham operator clubs)
+    - POST/ - It should only create a club if user is admin
+    - GET/:id - It should return the club information for ANY user
+    - GET/ - It should return all clubs
+  PROFILE (represents a ham operator, created by ARRL)
+    - POST/ - It should only create a user if user is admin
+    - POST/:id - It should allow admin to update EVERYTHING, but a regular user must be associated 
+                with this account and can only update Address
+    - GET/:id - It should return a profile to ANYONE not just logged in users
+    - GET/ - It should return all profiles to ANYONE not just logged in users
+  MEMBERSHIP (users with a profile (i.e. with a license) can request membership)
+    - (router.use("/club/:clubId/membership", require('./membership')))
+    - GET/ - It should get all members of the club IF A USER, It should return all requests 
+                if you are ADMIN OR the Owner of the Club
+    - GET/:id - It should return the status of the user to that club for ADMIN and Owner and that 
+                'id'/User
+    - POST/ - It should allow users to request access to a club (initial status is PENDING)
+    - POST/:id - It should allow ADMIN or OWNER to udpate a user request status from PENDING
+            to APPROVED
+    - DELETE - It should allow OWNERS/ADMIN to remove member from club and change status to RESCINDED
 
 5. A timeline for what project components you plan to complete, week by week, for the remainder of the class. 
 Week 1:
