@@ -1,13 +1,13 @@
 const { Router } = require("express");
 const router = Router();
 
-router.use("/login", require('./login'));
-router.use("/login/signup", require('./login'));
+//router.use("/login", require('./login'));
+//router.use("/login/signup", require('./login'));
 router.use("/items", require('./items'));
-router.use("/profile", require('./profile'));
-router.use("/profile/:id", require('./profile'));
-router.use("/club", require('./club'));
-router.use("/club/:clubId/membership", require('./membership'));
+//router.use("/profile", require('./profile'));
+//router.use("/profile/:id", require('./profile'));
+//router.use("/club", require('./club'));
+//router.use("/club/:clubId/membership", require('./membership'));
 // capture errors when the transactionid is not valid
 // use an error handling middleware - put it last
 router.use((err, _req, res, _next) => {
