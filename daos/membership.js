@@ -1,4 +1,5 @@
 const Membership = require('../models/membership');
+const Club = require('../models/club');
 
 module.exports = {};
 
@@ -36,6 +37,8 @@ module.exports.findMatchUserAndProfile = async (userObjectId, orderId) => {
   return order;
 }
 
+
+
 module.exports.findByIdAdmin = async (orderId) => {
   const order = await Membership.findOne({ _id:orderId }).lean();
   return order;
@@ -51,4 +54,17 @@ module.exports.getProfiles = () => {
 */
 module.exports.getOrdersUser = async (userObjectId) => {
   return await Membership.find({userId : userObjectId});
+}
+
+
+//
+module.exports.getMembers = async (clubId) => {
+  const { members } = await Club.findOne({ _id:clubId }).lean();
+  return members;
+}
+
+//
+module.exports.getStatus = async (profileId, clubId) => {
+  const { status } = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
+  return status;
 }

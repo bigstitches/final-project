@@ -26,6 +26,18 @@ module.exports.getRoles = async (userId) => {
   
 }
 
+module.exports.getById = async (userId) => {
+  try {
+    const foundUser = await User.findOne({ _id: userId }).lean();
+    // console.log(foundUser.email, ' ', foundUser.roles);
+    return foundUser;
+  } catch (error) {
+    // console.log('Get user error, ', error);
+    return;
+  }
+  
+}
+
 module.exports.updateUserPassword = async (userId, hashword) => {
   // const updatedPassword = await User.updateOne({ _id : userId , password });
   // why? need to investigate more the difference

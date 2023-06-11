@@ -20,8 +20,8 @@ module.exports.createItem = async (newOrder) => {
 
 // find by order ID,return the user ID
 module.exports.findById = async (orderId) => {
-  const order = await Profile.findOne({ _id:orderId }).lean();
-  return order.userId;
+  const profile = await Profile.findOne({ _id:orderId }).lean();
+  return profile;
 }
 
 // find by ID, update profile

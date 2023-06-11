@@ -13,10 +13,15 @@ const profileDAO = require('../daos/profile');
 const clubDAO = require('../daos/club');
 const membershipDAO = require('../daos/membership');
 const isLoggedIn = require('../middleware/isLoggedInProfile');
+const isWithRoles = require('../middleware/isWithRoles');
+const hasProfile = require('../middleware/hasProfile');
+const isExistenceOfClub = require('../middleware/isExistenceOfClub');
 const router = Router();
 
-//  Update Club Info? not sure i want to use this
-router.post("/:id", isLoggedIn, async (req, res, next) => {
+//  ADMIN users can update the request to RESCINDED or ACTIVE
+//  Owners of the club can update the request to rescinded or active
+//  IF they are owners of that club
+router.put("/:id", isLoggedIn, async (req, res, next) => {
   if ( !req.userId.roles.includes('admin') ) { 
     // console.log('HERE IN not admin');
     res.status(401).send('Unable to Access');
@@ -51,7 +56,9 @@ router.post("/:id", isLoggedIn, async (req, res, next) => {
   } 
 }); // end POST /:id
 
-// Create `POST /club` - only available to ADMIN
+// Create `POST /club/clubId/membership/` - only available to logged in users
+// with a profile.  Membership request must match token OR
+// admin members may create new requests
 router.post("/", isLoggedIn, async (req, res, next) => {
   // only admin can create a new club
   if ( !req.userId.roles.includes('admin') ) { 
@@ -124,25 +131,88 @@ router.post("/", isLoggedIn, async (req, res, next) => {
   }
 });
 
-//  Get specific profile for all users, even when not logged in
-router.get("/:id", async (req, res, next) => {
+// Create `POST /club/clubId/membership/profileId` - only available to logged in ADMIN
+router.post("/:id", isLoggedIn, async (req, res, next) => {
+  // only admin can create a request with another profile (not their own)
+  if ( !req.userId.roles.includes('admin') ) { 
+    // console.log('ACCESS ISSUE PROFILE');
+    res.status(401).send('Unable to create this request');
+  // else, you're admin, next()
+  } else {
+    // console.log(req.userId.roles, " ROLES");
+    next();
+  }
+}, async (req, res, next) => {  
+
+}, async (req, res, next) => {
+
+});
+
+//  Read Status of a request IF ADMIN OR THAT USER
+router.get("/:id", isLoggedIn, isWithRoles, isExistenceOfClub, async (req, res, next) => {
+  if (req.roles.includes('admin')){
+    try {
+      // console.log(requestedProfile); // items is empty?!
+      const membershipStatus = await membershipDAO.getStatus(req.params.id, req.club._id)
+      res.status(200).json(membershipStatus); 
+    } catch (error) {
+      next(error);
+    }  
+  } else {
+    next();
+  }
+}, hasProfile, async (req, res, next) => {
   try {
-    // console.log(requestedProfile); // items is empty?!
-    const requestedProfile = await profileDAO.findById(req.params.id);
-    res.status(200).json(requestedProfile); 
+    const { userId } = await profileDAO.findById(req.params.id);
+    if (!userId) {
+      res.status(401).json("Attempting to access someone else's record.");
+    } else {
+      if (req.userId===userId) {
+        try {
+          // console.log(requestedProfile); // items is empty?!
+          const membershipStatus = await membershipDAO.getStatus(req.params.id, req.club._id)
+          res.status(200).json(membershipStatus); 
+        } catch (error) {
+          next(error);
+        }  
+      } else {
+        res.status(401).json("Attempting to access someone else's record"); 
+      }
+    }
   } catch (error) {
-    // console.log(error);
-    res.status(500).json(error); 
-  }  
+    next(error);
+  } 
 }); // end GET /:id
 
-//  Get all profiles: `GET /profile` for all, even when not logged in
-router.get("/", async (req, res, _next) => {
+// `GET /members` for club, when logged in
+router.get("/", isLoggedIn, isExistenceOfClub, async (req, res, _next) => {
   try {
-    const profiles = await profileDAO.getProfiles();
+    const members = await membershipDAO.getMembers(req.club._id)
+    res.status(200).json(members); 
+  } catch (error) {
+    res.status(500).json(error); 
+  }
+});
+
+//  Remove a member from the club and change status to rescinded
+// ** NEEDS ERROR HANDLING
+router.delete("/:id", isLoggedIn, isExistenceOfClub, async (req, res, _next) => {
+  //console.log('IN DELETE: ', match[1]); // the club works
+  //console.log('club id: ', req.baseUrl);
+  //console.log(req.query.clubId);
+  //console.log(req.body.clubId);
+  //console.log('club id: ', req.params);
+  // console.log('SAME ', req.params.id) // the user works
+  // does club exist
+  // does profile exist
+  // does profile exist in club as active
+  // status: PENDING, ACTIVE, RESCINDED
+  try {
+    const profiles = await membershipDAO.getProfiles();
     res.status(200).json(profiles); 
   } catch (error) {
     res.status(500).json(error); 
   }
 });
+
 module.exports = router;

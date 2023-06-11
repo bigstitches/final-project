@@ -169,7 +169,7 @@ describe("/profile", () => {
           .post("/profile/" + testProf0._id.toString())
           .set('Authorization', 'Bearer ' + token0)
           .send(updateName0);
-          console.log('IN TEST NAME: ', res.body.name);
+          //console.log('IN TEST NAME: ', res.body.name);
         expect(res.statusCode).toEqual(401);
       });
       it('should send 200 to the correct user trying to update an address', async () => {
