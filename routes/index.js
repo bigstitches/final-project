@@ -4,6 +4,7 @@ const router = Router();
 //router.use("/login", require('./login'));
 //router.use("/login/signup", require('./login'));
 router.use("/items", require('./items'));
+router.use("/health", require('./health'));
 //router.use("/profile", require('./profile'));
 //router.use("/profile/:id", require('./profile'));
 //router.use("/club", require('./club'));
