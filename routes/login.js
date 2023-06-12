@@ -9,6 +9,16 @@ const hashPassword = require('../middleware/hashPassword')
 const requirePassword = require('../middleware/requirePassword')
 const userDAO = require('../daos/user');
 
+// Form to SignUp
+router.get('/', (req, res, next) => {
+  try {
+      res.render('login');
+  } catch(e) {
+      console.error(e);
+      next(e);
+  }
+});
+
 // Signup; should use bcrypt on the incoming password. Store user with their email and 
 // encrypted password, handle conflicts when the email is already in use.
 router.post("/signup", async (req, res, next) => {
