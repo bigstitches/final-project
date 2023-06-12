@@ -24,6 +24,12 @@ module.exports.findById = async (orderId) => {
   return profile;
 }
 
+// find by order ID,return the user ID
+module.exports.findByUserModelId = async (idOfUser) => {
+  const profile = await Profile.findOne({ userId:idOfUser }).lean();
+  return profile;
+}
+
 // find by ID, update profile
 module.exports.findByIdUpdate = async (userId, updates) => {
   const profile = await Profile.findByIdAndUpdate(userId, updates, {new: true}).lean();

@@ -25,12 +25,6 @@ module.exports.findById = async (orderId) => {
   return order.userId;
 }
 
-// find by ID, update profile
-module.exports.findByIdUpdate = async (userId, updates) => {
-  const profile = await Membership.findByIdAndUpdate(userId, updates, {new: true}).lean();
-  return profile;
-}
-
 //
 module.exports.findMatchUserAndProfile = async (userObjectId, orderId) => {
   const order = await Membership.findOne({ userId:userObjectId, _id:orderId }).lean();
@@ -65,6 +59,26 @@ module.exports.getMembers = async (clubId) => {
 
 //
 module.exports.getStatus = async (profileId, clubId) => {
-  const { status } = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
-  return status;
+  const mbrship = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
+  if (!mbrship) {
+    return null;
+  } else {
+    return mbrship.status;
+  }
+}
+
+//
+module.exports.getMembership = async (profileId, clubId) => {
+  const mbrship = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
+  if (!mbrship) {
+    return null;
+  } else {
+    return mbrship;
+  }
+}
+
+// find by ID, update profile
+module.exports.findByIdUpdate = async (mbrshipId, updates) => {
+  const membership = await Membership.findByIdAndUpdate(mbrshipId, updates, {new: true}).lean();
+  return membership;
 }

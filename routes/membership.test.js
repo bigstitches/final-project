@@ -124,10 +124,10 @@ describe("/membership", () => {
           });
         });
     
-      describe('POST /:id', () => {
+      describe('PUT /:id', () => {
         it('should not create a membership request when not logged in', async () => {
           const res = await request(server)
-            .post("/club/"+ clubH._id +"/membership/" + profileR._id)
+            .put("/club/"+ clubH._id +"/membership/" + profileR._id)
             .set('Authorization', 'Bearer ' + trashToken)
             .send();
           expect(res.statusCode).toEqual(401);
@@ -149,34 +149,34 @@ describe("/membership", () => {
 
   describe('After login', () => {
     let profileR;
+    let profileS;
     let clubH;
     let regularToken;
     let adminToken;
     let membership1;
 
-    beforeAll(async () => {
-      const userADMIN = {
-        password: "123Password",
-        email: 'adminplop@gmail.com',
-        roles: ['user, admin']
-      }
-      const userREGULAR = {
-        password: "123Password",
-        email: 'regularBloke@gmail.com',
-        roles: ['user']
-      }
+    const userADMIN = {
+      password: "123Password",
+      email: 'a@gmail.com',
+    }
+    const userREGULAR = {
+      password: "123Password",
+      email: 'rB@gmail.com',
+    }
+    
+    const userREGULARCLUBOWNER = {
+      password: "123Password",
+      email: 'hc@gmail.com',
+    }
+
+    beforeEach(async () => {
       
-      const userREGULARCLUBOWNER = {
-        password: "123Password",
-        email: 'highlineHAMCLUB2@gmail.com',
-        roles: ['user']
-      }
-      const userA = await User.create(userADMIN);
-      // create regular user
-      const userR = await User.create(userREGULAR);
-      // create regular user that is in charge of the Highline Club
-      const userH = await User.create(userREGULARCLUBOWNER);
-      // Regular Bloke that will be requesting membership to Highline
+      await request(server).post("/login/signup").send(userADMIN);
+      await User.updateOne({ email: userADMIN.email }, { $push: { roles: 'admin'} });
+      await request(server).post("/login/signup").send(userREGULAR);
+      const userR = await User.findOne({ email: userREGULAR.email});
+      await request(server).post("/login/signup").send(userREGULARCLUBOWNER);
+      const userH = await User.findOne({ email: userREGULARCLUBOWNER.email});
 
       const profileREG = {
         userId: userR._id,
@@ -186,58 +186,91 @@ describe("/membership", () => {
         licenseClass: 'general',
       }
 
+      const profileSUPER = {
+        userId: userR._id,
+        name: 'Tina Turner',
+        address: '14889 22nd lane, Renton, WA 97223',
+        callSign: 'XOUULFF',
+        licenseClass: 'expert',
+      }
+
+      profileR = await Profile.create(profileREG);
+      profileS = await Profile.create(profileSUPER);
+      // create club, Highline, run by userH
+
       const clubHIGHLINE = { 
         userId: userH._id,
         name: 'Highline',
         address: address1,
       };
-
-      profileR = await Profile.create(profileREG);
-      // create club, Highline, run by userH
       clubH = await Club.create(clubHIGHLINE);
-
-      const res1 = await request(server).post("/login").send(userR);
-      regularToken = res1.body.token;
-
-      const resC = await request(server).post("/login").send(userH);
-      clubToken = resC.body.token;
-
-      const res2 = await request(server).post("/login").send(userA);
-      adminToken = res2.body.token;
-
       membership1 = {
         profileId: profileR._id,
         clubId: clubH._id,
         status: 'PENDING',
       }
-    });
-    afterEach(async () => {
-      User.deleteMany();
-      Profile.deleteMany();
-      Club.deleteMany();
+      membership2 = {
+        profileId: profileS._id,
+        clubId: clubH._id,
+        status: 'ACTIVE',
+      }
+      const mbrship = await Membership.create(membership2);
+      await Club.updateOne({ name: clubHIGHLINE.name }, { $push: { members: profileS._id} });
+
+      const res1 = await request(server).post("/login").send(userREGULAR);
+      regularToken = res1.body.token;
+
+      const resC = await request(server).post("/login").send(userREGULARCLUBOWNER);
+      clubToken = resC.body.token;
+
+      const res2 = await request(server).post("/login").send(userADMIN);
+      adminToken = res2.body.token;
+      // console.log('at the end of every');
+      // console.log('test tokens: ', regularToken, ' ', clubToken, ' ', adminToken);
     });
     
-    describe('GET /', () => {
-        it('should get all members of a club as admin', async () => {
-          const res = await request(server)
-            //.get("/club/:clubId/membership")
-            .get("/club/"+ clubH._id +"/membership")
-            .set('Authorization', 'Bearer ' + adminToken)
-            .send();
-          expect(res.statusCode).toEqual(200);
-        });
-    });
-
-    describe('GET /', () => {
-      it('should get all members of a club as regular user', async () => {
-        const res = await request(server)
-          //.get("/club/:clubId/membership")
-          .get("/club/"+ clubH._id +"/membership")
+    describe('PUT /:id', () => {
+      it('should update a membership request as admin', async () => {
+        // create a regular request
+        await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
-        expect(res.statusCode).toEqual(200);
+        // udpate the request just made
+        const res2 = await request(server)
+          .put("/club/"+ clubH._id +"/membership/" + profileR._id)
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send({status: 'ACTIVE'});
+        expect(res2.statusCode).toEqual(200);
+        // console.log("in test", res2.body);
+        expect(res2.body.status).toEqual('ACTIVE');
       });
-  });
+      it('should not update a membership request regular user', async () => {
+        // create a regular request
+        await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        const res = await request(server)
+          .put("/club/"+ clubH._id +"/membership/" + profileR._id)
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send({status: 'ACTIVE'});
+        expect(res.statusCode).toEqual(401);
+      });
+      it('should update a membership request if owner of club', async () => {
+        // create a regular request
+        await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        const res = await request(server)
+          .put("/club/"+ clubH._id +"/membership/" + profileR._id)
+          .set('Authorization', 'Bearer ' + clubToken)
+          .send({status: 'ACTIVE'});
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.status).toEqual('ACTIVE');
+      });
+    });
 
     describe('GET /:id', () => {
       it('should return a membership status if same member', async () => {
@@ -262,58 +295,74 @@ describe("/membership", () => {
         expect(res.statusCode).toEqual(200);
       });
     });
-      describe('POST /', () => {
-        it('should create membership request for regular users', async () => {
-          const res = await request(server)
-            .post("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + regularToken)
-            .send(membership1);
-          expect(res.statusCode).toEqual(200);
-          //
-        });
-        it('should not allow regular users to create a request for someone else', async () => {
-          const res = await request(server)
-            .post("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + regularToken)
-            .send();
-          expect(res.statusCode).toEqual(200);
-          //
-        });
-        it('should not create duplicate requests', async () => {
-          const res = await request(server)
-            .post("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + regularToken)
-            .send();
-          expect(res.statusCode).toEqual(401);
-          //
-        });
 
-        it('should allow admin to create any request', async () => {
-          const res = await request(server)
-            .post("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + adminToken)
-            .send();
-          expect(res.statusCode).toEqual(200);
-          //
-        });
+    describe('GET /', () => {
+      it('should get all member requests of a club as admin', async () => {
+        // console.log('get test as admin', adminToken);
+        const res = await request(server)
+          //.get("/club/:clubId/membership")
+          .get("/club/"+ clubH._id +"/membership")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send();
+        expect(res.statusCode).toEqual(200);
       });
-
-      describe('DELETE /', () => {
-        it('should allow admin to delete a request', async () => {
-          const res = await request(server)
-            .delete("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + adminToken)
-            .send();
-          expect(res.statusCode).toEqual(200);
-        });
-
-        it('should allow a member to quit a club', async () => {
-          const res = await request(server)
-            .delete("/club/"+ clubH._id +"/membership/" + profileR._id)
-            .set('Authorization', 'Bearer ' + regularToken)
-            .send();
-          expect(res.statusCode).toEqual(200);
-        });
+      it('should get all members of a club as regular user', async () => {
+        // console.log('get test as reg user');
+        const res = await request(server)
+          //.get("/club/:clubId/membership")
+          .get("/club/"+ clubH._id +"/membership")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        expect(res.statusCode).toEqual(200);
       });
     });
+
+    describe('POST /', () => {
+      it('should create membership request for regular users', async () => {
+        const res = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        expect(res.statusCode).toEqual(200);
+        //
+      });
+      it('should not create duplicate requests', async () => {
+        const res1 = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        const res2 = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        expect(res2.statusCode).toEqual(401);
+        //
+      });
+      it('should not allow users without a profile to create a request', async () => {
+        const res = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send();
+        expect(res.statusCode).toEqual(401);
+      });
+    });
+
+    describe('DELETE /', () => {
+      it('should allow admin to delete a request', async () => {
+        const res = await request(server)
+          .delete("/club/"+ clubH._id +"/membership/" + profileR._id)
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send();
+        expect(res.statusCode).toEqual(200);
+      });
+
+      it('should allow a member to quit a club', async () => {
+        const res = await request(server)
+          .delete("/club/"+ clubH._id +"/membership/" + profileR._id)
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        expect(res.statusCode).toEqual(200);
+      });
+    });
+  });
 });
