@@ -166,7 +166,7 @@ describe("/profile", () => {
             userId: [idObjectTest[4]],
             name: 'BLTs',
             address: address1, //Mukilteo
-            members: [idObjectTest[6], idObjectTest[7]]
+            members: [idObjectTest[6], idObjectTest[1], idObjectTest[2], idObjectTest[3], idObjectTest[4], idObjectTest[5]]
           }
         ]
         const clubs = await Club.insertMany(testClubs);
@@ -175,16 +175,16 @@ describe("/profile", () => {
         // clean up
         await Club.deleteMany({});
       })
-      it('should return the club with the most members', async () => {
+      it('should return the club with the most members by city', async () => {
         // const clubsList = await Club.find().lean();
         const searchTerm = 'Mukilteo'
         const res = await request(server)
           .get("/club/mostMembers?query="+ encodeURI(searchTerm))
           .send();
-        console.log('In most members test ', res.body);
+        // console.log('In most members test ', res.body);
         expect(res.statusCode).toEqual(200);
-        expect(res.body[0].totalMembers).toEqual(3); // total clubs
-        expect(res.body[0].names.length).toEqual(3); // 3/4 clubs in Mukilteo
+        expect(res.body[0].Name).toEqual('BLTs'); // total clubs
+        expect(res.body[0]['Total Members']).toEqual(6); // 3/4 clubs in Mukilteo
         //expect(res.body.length).toEqual(4);
       });
     });

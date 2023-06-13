@@ -59,7 +59,9 @@ module.exports.getMembers = async (clubId) => {
 
 //
 module.exports.getStatus = async (profileId, clubId) => {
+  //console.log('IN DAO MBRSHIP ', profileId, clubId);
   const mbrship = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
+  // console.log('IN DAO return mbrship???? ', mbrship);
   if (!mbrship) {
     return null;
   } else {

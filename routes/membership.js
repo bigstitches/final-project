@@ -96,6 +96,7 @@ router.get("/:id", isLoggedIn, isWithRoles, isExistenceOfClub, async (req, res, 
     }
   }
 }, hasMbrRequest, async (req, res, next) => {
+  // console.log('After hasmbr ', req.status);
   res.status(200).json(req.status); 
 }); // end GET /:id
 
@@ -120,7 +121,7 @@ router.get("/", isLoggedIn, isExistenceOfClub, isWithRoles, async (req, res, nex
 // Remove a member from the club and change status to rescinded
 // ADMIN/OWNERS can change status to RESCINDED and remove them from the club array
 // users with a request (in form of profileid) can change their own request to rescinded
-// and remove themselves from the club membership 
+// and remove 
 // ** NEEDS ERROR HANDLING
 router.delete("/:id", isLoggedIn, isExistenceOfClub, async (req, res, _next) => {
   //console.log('IN DELETE: ', match[1]); // the club works

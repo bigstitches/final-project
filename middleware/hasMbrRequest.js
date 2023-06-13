@@ -6,7 +6,7 @@ const membershipDAO = require('../daos/membership');
 router.use("/", async (req, res, next) => {
   // console.log(req.userId);
   // console.log('In has active or pending middleware!');
-  // console.log('expect profile id: ', req.profile._id);
+  // console.log('expect profile id: ', req.profileId);
   // console.log('expect club: ', req.club);
   // requires other middleware before this can be called successfully
   // req.profileId

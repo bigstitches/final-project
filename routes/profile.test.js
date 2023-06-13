@@ -66,19 +66,27 @@ describe("/profile", () => {
     });
     describe('GET /', () => {
       it('should send 200 without a token', async () => {
+        // create a profile to see if it's returned
+        await Profile.create(profile1);
         const res = await request(server).get("/profile").send(profile0);
+        //console.log('IN PROFILE TEST RES ', res.body);
         expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(1);
       });
       it('should send 200 with a bad token', async () => {
+        await Profile.create(profile0);
         const res = await request(server)
           .get("/profile")
           .set('Authorization', 'Bearer BAD')
           .send();
+        //console.log('IN PROFILE TEST RES ', res.body);
         expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(2);
       });
     });
   
   });
+
 
   describe('after login', () => {
     const user0 = {
@@ -121,13 +129,6 @@ describe("/profile", () => {
     describe("POST /:id", () => {
       
       beforeEach(async () => {
-        //await request(server).post("/login/signup").send(user0);
-        //const res0 = await request(server).post("/login").send(user0);
-        //token0 = res0.body.token;
-        //await request(server).post("/login/signup").send(user1);
-        //await User.updateOne({ email: user1.email }, { $push: { roles: 'admin'} });
-        //const res1 = await request(server).post("/login").send(user1);
-        //adminToken = res1.body.token;
   
         // associate profile0 with user0 and profile1 with user1
         const userId0 = (await User.findOne({ email: user0.email }))._id.toString();
@@ -186,12 +187,8 @@ describe("/profile", () => {
         const res = await request(server)
           .post("/profile")
           .set('Authorization', 'Bearer ' + adminToken)
-          .send(profile1);
+          .send(profile1); // different than profile 0
         expect(res.statusCode).toEqual(200);
-        // const storedProfile = await Profile.findOne().lean();
-        // const storedProfile = await Profile.findById(profile1.userId).lean();
-        // console.log('res.body, ', res.body);
-        // console.log('testProfile, ', testProfile1);
         expect(res.body.userId).toEqual(testProfile1.userId.toString());
         expect(res.body.name).toEqual(testProfile1.name);
         expect(res.body.address).toEqual(testProfile1.address);
@@ -207,6 +204,81 @@ describe("/profile", () => {
       });
     });
 
+    describe("GET /:id", () => {
+      it('should send 200 and get a profile', async () => {
+        // this is just set-up
+        const int1 = await request(server)
+          .post("/profile")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send(profile0); // create two profiles
+        // console.log('IN GET int1: ', int1.body)
+        const int2 = await request(server)
+          .post("/profile")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send(profile1); // create two profiles
+        // console.log('IN GET int2: ', int2.body)
+        // console.log('what am i looking up?', testProf0._id.toString());
+        // console.log('OOORRR am i looking up?', profile0.userId.toString());
+        // here is the test action...
+        const res = await request(server)
+          .get("/profile/"+ profile0.userId.toString())
+          .set('Authorization', 'Bearer anything')
+          .send();
+        // console.log('IN GET: ', res.body)
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.name).toEqual(int1.body.name);
+        /*
+        expect(res.body.userId).toEqual(testProfile1.userId.toString());
+        expect(res.body.name).toEqual(testProfile1.name);
+        expect(res.body.address).toEqual(testProfile1.address);
+        expect(res.body.callSign).toEqual(testProfile1.callSign);
+        expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
+        */
+      });
+    });
+
+    describe("GET /email/:id", () => {
+      it('should send 200 and get an email for the profile', async () => {
+        const int1 = await request(server)
+          .post("/profile")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send(profile0); // create a profiles
+        const res = await request(server)
+          .get("/profile/email/"+ profile0.userId.toString())
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send();
+        // console.log('IN GET: ', res.body)
+        expect(res.statusCode).toEqual(200);
+        // expect(res.body.name).toEqual(int1.body.name);
+        /*
+        expect(res.body.userId).toEqual(testProfile1.userId.toString());
+        expect(res.body.name).toEqual(testProfile1.name);
+        expect(res.body.address).toEqual(testProfile1.address);
+        expect(res.body.callSign).toEqual(testProfile1.callSign);
+        expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
+        */
+      });
+      it('should send 401 and NOT get an email for the profile if not admin', async () => {
+        const int1 = await request(server)
+          .post("/profile")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send(profile0); // create a profiles
+        const res = await request(server)
+          .get("/profile/email/"+ profile0.userId.toString())
+          .set('Authorization', 'Bearer Trash')
+          .send();
+        // console.log('IN GET: ', res.body)
+        expect(res.statusCode).toEqual(401);
+        // expect(res.body.name).toEqual(int1.body.name);
+        /*
+        expect(res.body.userId).toEqual(testProfile1.userId.toString());
+        expect(res.body.name).toEqual(testProfile1.name);
+        expect(res.body.address).toEqual(testProfile1.address);
+        expect(res.body.callSign).toEqual(testProfile1.callSign);
+        expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
+        */
+      });
+    });
     
 
     /*

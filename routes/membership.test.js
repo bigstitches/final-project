@@ -284,14 +284,16 @@ describe("/membership", () => {
 
     describe('GET /:id', () => {
       it('should return a membership status if same member', async () => {
-        // console.log('IN TEST, profileId ', profileR._id);
+        // console.log('IN TEST GET ID same mbr');
         const res = await request(server)
           .get("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
+        // console.log("IN TEST", res.body);
         expect(res.statusCode).toEqual(200);
       });
       it('should return a membership status if admin', async () => {
+        // console.log('IN TEST GET profile and admin');
         const res = await request(server)
           .get("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + adminToken)
@@ -299,6 +301,7 @@ describe("/membership", () => {
         expect(res.statusCode).toEqual(200);
       });
       it('should not return a membership status if not same member', async () => {
+        // console.log('IN TEST, profileId profile and club');
         const res = await request(server)
           .get("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + clubToken)
@@ -310,20 +313,42 @@ describe("/membership", () => {
     describe('GET /', () => {
       it('should get all member requests of a club as admin', async () => {
         // console.log('get test as admin', adminToken);
+        const re1 = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        //Membership.findById(re1.body._id)
+        //console.log('in test create request ', re1.body);
+        await Membership.findByIdAndUpdate(re1.body._id, { status: 'ACTIVE' });
+        const updClub = await Club.findByIdAndUpdate(re1.body.clubId, { $push : { members : re1.body.profileId}});
+        console.log('IN RES CLUB ', updClub);
         const res = await request(server)
           //.get("/club/:clubId/membership")
           .get("/club/"+ clubH._id +"/membership")
           .set('Authorization', 'Bearer ' + adminToken)
           .send();
+        //console.log("IN GET ALL TEST ", res.body);
+        expect(res.body.length).toEqual(1);
         expect(res.statusCode).toEqual(200);
       });
       it('should get all members of a club as regular user (only active mbrs)', async () => {
-        // console.log('get test as reg user');
+        // console.log('get test as admin', adminToken);
+        const re1 = await request(server)
+          .post("/club/"+ clubH._id +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        //Membership.findById(re1.body._id)
+        //console.log('in test create request ', re1.body);
+        await Membership.findByIdAndUpdate(re1.body._id, { status: 'ACTIVE' });
+        const updClub = await Club.findByIdAndUpdate(re1.body.clubId, { $push : { members : re1.body.profileId}});
+        console.log('IN RES CLUB ', updClub);
         const res = await request(server)
           //.get("/club/:clubId/membership")
           .get("/club/"+ clubH._id +"/membership")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
+        console.log("IN GET ALL TEST ", res.body);
+        expect(res.body.length).toEqual(1);
         expect(res.statusCode).toEqual(200);
       });
     });

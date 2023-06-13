@@ -20,28 +20,42 @@ module.exports.getById = async (clubId) => {
 }
 
 // HW REQUIREMENT: At least one aggregate 
-// WILL NOT USE LICENESECLASSNAME YET
+// Get Club with Most Members by City
 // module.exports.mostMembers = async (page, perPage, licenseClassName) => {
 module.exports.mostMembers = async (page, perPage, citySearch) => {
     // clubIdScope is array of ids
-    console.log('in daos most members');
-    console.log('query ', citySearch)
+    //console.log('in daos most members');
+    //console.log('query ', citySearch)
     return Club.aggregate([
     { 
         $match: { "address.city" : citySearch }
     },
     { 
         $group: { 
-          _id: "address.city",
-          members: { $push: '$members' },
-          names: { $push: '$name' }
+          // group by each club's name
+          _id: "$name",
+          //members: "members",
+          names: { $push: '$name' },
+          members: { $push: '$members'}
+          // names: '$name' 
         } 
+    },
+    {
+        $unwind: '$members'
     },
     {
         $project: {
             _id: 0,
-            names: '$names',
-            totalMembers: { $sum : { $size: "$members" } } 
+            Name: '$_id',
+            // totalMembers: { $size: "$members" } 
+            // totalMembers: "$members"
+            "Total Members": { $size : "$members" } 
+            // totalMembers: "$members" 
+        }
+    },
+    { 
+        $sort: { 
+            "Total Members":-1
         }
     }
     ]).limit(perPage).skip(perPage*page);

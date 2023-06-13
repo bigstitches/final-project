@@ -18,11 +18,52 @@ module.exports.createItem = async (newOrder) => {
   return profile;
 }
 
-// find by order ID,return the user ID
-module.exports.findById = async (orderId) => {
-  const profile = await Profile.findOne({ _id:orderId }).lean();
+// find by ID,return the user ID
+module.exports.findById = async (profId) => {
+  const profile = await Profile.findOne({ _id:profId }).lean();
+  // console.log('IN DAOSDDDDD ', profile);
   return profile;
 }
+
+// find by order ID,return the user ID
+module.exports.findByProfileId = async (profId) => {
+  //const profile = await Profile.findOne({ userId:profId }).lean();
+  const profileEmailInfo = Profile.aggregate([
+    { $match: { userId : profId } },
+    {
+      $lookup: {
+        from: 'users', // which schema to find
+        localField: 'userId', // field in the profile collection
+        foreignField: '_id', // field in the users colleciton
+        as: 'emailUserId'
+      }
+    },
+    {
+      $group: {
+        _id: '$userId', // from profile
+        email: { $push: '$emailUserId'},
+        callSign: { $push: '$callSign'},
+        name: { $push: '$name'}
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        name: '$name',
+        callSign: '$callSign',
+        email: '$emailUserId',
+      }
+    }
+  ])
+  return profileEmailInfo;
+} 
+
+// find by order ID,return the user ID
+module.exports.findEmailByProfileId = async (profId) => {
+  const profile = await Profile.findOne({ userId:profId }).lean();
+  // console.log('IN DAOSDDDDD ', profile);
+  return profile;
+} // findEmailByProfileId
 
 // find by order ID,return the user ID
 module.exports.findByUserModelId = async (idOfUser) => {

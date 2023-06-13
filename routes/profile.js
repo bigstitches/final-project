@@ -114,11 +114,26 @@ router.post("/", isLoggedIn, async (req, res, next) => {
   }
 });
 
-//  Get specific profile for all logged in users, even when not logged in
-router.get("/:id", async (req, res, next) => {
+// HW Requirement
+// STILL NEED TO ADD ADMINNNNNN
+router.get("email/:id", async (req, res, next) => {
+  console.log('In profile ROUTE ', req.params.id);
   try {
     // console.log(requestedProfile); // items is empty?!
-    const requestedProfile = await profileDAO.findById(req.params.id);
+    const requestedProfile = await profileDAO.findEmailByProfileId(req.params.id);
+    res.status(200).json(requestedProfile); 
+  } catch (error) {
+    // console.log(error);
+    res.status(500).json(error); 
+  }  
+}); // end GET /:id
+
+//  Get specific profile for all logged in users, even when not logged in
+router.get("/:id", async (req, res, next) => {
+  console.log('In profile ROUTE ', req.params.id);
+  try {
+    // console.log(requestedProfile); // items is empty?!
+    const requestedProfile = await profileDAO.findByProfileId(req.params.id);
     res.status(200).json(requestedProfile); 
   } catch (error) {
     // console.log(error);
@@ -128,6 +143,7 @@ router.get("/:id", async (req, res, next) => {
 
 //  Get all profiles: `GET /profile` for all, even when not logged in
 router.get("/", async (req, res, _next) => {
+  // console.log( "IN ROUTE GET ");
   try {
     const profiles = await profileDAO.getProfiles();
     res.status(200).json(profiles); 
