@@ -26,7 +26,7 @@ module.exports.findById = async (profId) => {
 }
 
 // find by order ID,return the user ID
-module.exports.findByProfileId = async (profId) => {
+module.exports.findEmailByProfileId = async (profId) => {
   //const profile = await Profile.findOne({ userId:profId }).lean();
   const profileEmailInfo = Profile.aggregate([
     { $match: { userId : profId } },
@@ -59,11 +59,11 @@ module.exports.findByProfileId = async (profId) => {
 } 
 
 // find by order ID,return the user ID
-module.exports.findEmailByProfileId = async (profId) => {
+module.exports.findByProfileId = async (profId) => {
   const profile = await Profile.findOne({ userId:profId }).lean();
   // console.log('IN DAOSDDDDD ', profile);
   return profile;
-} // findEmailByProfileId
+} // findByProfileId
 
 // find by order ID,return the user ID
 module.exports.findByUserModelId = async (idOfUser) => {

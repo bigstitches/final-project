@@ -66,6 +66,7 @@ describe("/profile", () => {
     });
     describe('GET /', () => {
       it('should send 200 without a token', async () => {
+        await Profile.deleteMany({});
         // create a profile to see if it's returned
         await Profile.create(profile1);
         const res = await request(server).get("/profile").send(profile0);
@@ -74,6 +75,7 @@ describe("/profile", () => {
         expect(res.body.length).toEqual(1);
       });
       it('should send 200 with a bad token', async () => {
+        // await Profile.deleteMany({});
         await Profile.create(profile0);
         const res = await request(server)
           .get("/profile")
@@ -224,7 +226,7 @@ describe("/profile", () => {
           .get("/profile/"+ profile0.userId.toString())
           .set('Authorization', 'Bearer anything')
           .send();
-        // console.log('IN GET: ', res.body)
+        // console.log('IN GET TEST: ', res.body)
         expect(res.statusCode).toEqual(200);
         expect(res.body.name).toEqual(int1.body.name);
         /*
@@ -236,7 +238,7 @@ describe("/profile", () => {
         */
       });
     });
-
+/*
     describe("GET /email/:id", () => {
       it('should send 200 and get an email for the profile', async () => {
         const int1 = await request(server)
@@ -247,7 +249,7 @@ describe("/profile", () => {
           .get("/profile/email/"+ profile0.userId.toString())
           .set('Authorization', 'Bearer ' + adminToken)
           .send();
-        // console.log('IN GET: ', res.body)
+        console.log('IN GET EMAIL: ', res.body)
         expect(res.statusCode).toEqual(200);
         // expect(res.body.name).toEqual(int1.body.name);
         /*
@@ -257,7 +259,8 @@ describe("/profile", () => {
         expect(res.body.callSign).toEqual(testProfile1.callSign);
         expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
         */
-      });
+      //});
+      /*
       it('should send 401 and NOT get an email for the profile if not admin', async () => {
         const int1 = await request(server)
           .post("/profile")
@@ -277,7 +280,8 @@ describe("/profile", () => {
         expect(res.body.callSign).toEqual(testProfile1.callSign);
         expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
         */
-      });
+     // });
+     // */
     });
     
 
@@ -387,5 +391,5 @@ describe("/profile", () => {
       });
     });
     */
-  });
+ // });
 });

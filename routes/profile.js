@@ -130,7 +130,7 @@ router.get("email/:id", async (req, res, next) => {
 
 //  Get specific profile for all logged in users, even when not logged in
 router.get("/:id", async (req, res, next) => {
-  console.log('In profile ROUTE ', req.params.id);
+  // console.log('In profile ROUTE GET/id', req.params.id);
   try {
     // console.log(requestedProfile); // items is empty?!
     const requestedProfile = await profileDAO.findByProfileId(req.params.id);

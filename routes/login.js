@@ -46,6 +46,7 @@ router.post("/signup", async (req, res, next) => {
       }
       try {
         const createdUser = await userDAO.createUser(newUser);
+        console.log("CREATED USER", createdUser);
         res.sendStatus(200);
         res.json(createdUser);
       } catch(e) {
