@@ -9,8 +9,9 @@ router.use("/", async (req, res, next) => {
   // console.log('expect profile id: ', req.profile._id);
   // console.log('expect club: ', req.club);
   // requires other middleware before this can be called successfully
+  // req.profileId
   try {
-    const status = await membershipDAO.getStatus(req.profile._id, req.club._id);
+    const status = await membershipDAO.getStatus(req.profileId, req.club._id);
     req.status = status;
     next();
   } catch(e) {

@@ -10,9 +10,9 @@ const userDAO = require('../daos/user');
 // 'Bearer 1234abcd') and you will need to extract just the token text. Any route that says 
 // "If the user is logged in" should use this middleware function.
 router.use("/", async (req, res, next) => {
-  console.log("HERER ",req.userId);
+  // console.log("HERER ",req.userId);
   const roles = await userDAO.getRoles(req.userId._id);
-  console.log('ISAUTHORIZEDOrdes: ', roles);
+  // console.log('ISAUTHORIZEDOrdes: ', roles);
     if (!roles) {
       res.status(403).send('User has no roles');
     } else {

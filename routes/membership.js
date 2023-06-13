@@ -16,179 +16,113 @@ const isLoggedIn = require('../middleware/isLoggedInProfile');
 const isWithRoles = require('../middleware/isWithRoles');
 const hasProfile = require('../middleware/hasProfile');
 const isExistenceOfClub = require('../middleware/isExistenceOfClub');
+const isNewRequest = require('../middleware/hasACTIVEorPENDINGrequest');
 const router = Router();
+const hasMbrRequest = require('../middleware/hasMbrRequest');
+const hasMbrRequestADMIN = require('../middleware/hasMbrRequestADMIN');
 
 //  ADMIN users can update the request to RESCINDED or ACTIVE
 //  Owners of the club can update the request to rescinded or active
 //  IF they are owners of that club
-router.put("/:id", isLoggedIn, async (req, res, next) => {
+router.put("/:id", isLoggedIn, isExistenceOfClub, async (req, res, next) => {
+  // only admin can update a request with another profile (not their own)
+  req.profileId = req.params.id;
   if ( !req.userId.roles.includes('admin') ) { 
-    // console.log('HERE IN not admin');
-    res.status(401).send('Unable to Access');
-  // else admin
-  } else if (req.userId.roles.includes('admin')) {
-    const profileUpdates = req.body;
-    // console.log('POST ID: REQ.BODY: ', req.body);
-
+    // check to see if logged in member owns this club
     try {
-      const profileChanges = await profileDAO.findByIdUpdate(req.params.id, profileUpdates);
-      res.status(200).json(profileChanges); 
-    } catch(e) {
-      console.log("ERROR: ", e);
-      next(e);
-    }
-  // Update only address
-  } else {
-    const { address } = req.body;
-    // console.log('whole body: ', req.body, ' address: ', address);
-    
-    if (!address) {
-      res.status(401).send('Only able to update address field');
-    } else {
-      try {
-        const profileChanges = await profileDAO.findByIdUpdate(req.params.id, address);
-        res.status(200).json(profileChanges); 
-      } catch(e) {
-        console.log("ERROR: ", e);
-        next(e);
+      // Pass a function to map
+      // check to see if the logged-in/token is in the 'owner'/userId array
+      let match = false;
+      req.club.userId.forEach((owners) => {
+        // console.log('in map', owners.toString());
+        if (owners.toString() === req.userId._id) {
+          match = true;
+        }
+      });
+      if (match) {
+        next();
+      } else {
+        res.status(401).send('Unable to update this request');
       }
+    } catch {
+      res.status(401).send('Unable to update this request');
     }
-  } 
-}); // end POST /:id
-
-// Create `POST /club/clubId/membership/` - only available to logged in users
-// with a profile.  Membership request must match token OR
-// admin members may create new requests
-router.post("/", isLoggedIn, async (req, res, next) => {
-  // only admin can create a new club
-  if ( !req.userId.roles.includes('admin') ) { 
-    // console.log('ACCESS ISSUE PROFILE');
-    res.status(401).send('Unable to Access');
-  // else, you're admin, next()
-  } else {
-    // console.log(req.userId.roles, " ROLES");
-    next();
-  }
-}, async (req, res, next) => {  
-  // Middleware Handle the Inputs
-  // const profile = req.body._doc;
-  const profile = req.body;
-  // if the array is empty
-  // console.log("profile?, ", profile);
-  if (!profile || profile === {}) {
-    console.log('EMPTY CLUB INFO ', req.body);
-    res.status(401).send('Empty Clubs Cannot be Created');
   } else {
     next();
   }
-}, async (req, res, next) => {
-  // Middleware Handle the Inputs
-  const club = req.body;
-  const address = req.body.address;
-
-  const newAddress = {
-    'address': address.address,
-    'city':  address.city,
-    'state':  address.state,
-    'zip': address.zip,
-  }
-  // userId is the account that can update club membership
-  // userId is the account that can create events
-  const newClub = {
-    'userId': club.userId,
-    'name':  club.name,
-    'address':  newAddress
-  }
-  // console.log('HERE CLUB ROUTE: ', newClub);
+}, hasMbrRequestADMIN, async (req, res, next) => {  
   try {
-    // console.log('item order created', newOrder);
-    const clubCreated = await clubDAO.create(newClub); 
-    // console.log('HERE CLUB ROUTE: ', clubCreated);
-    res.status(200).json(clubCreated); 
-    /*
-    FIXED, ugh, update the index routes 
-    In error club validation failed: name: Path `name` is required., userId: Path `userId` 
-    is required.
-    */
-    /*
-      item order created {
-      userId: '6463d4a2b24d345ef8ed1019',
-      items: [ new ObjectId("6463d4a2b24d345ef8ed1011") ],
-      total: 1
-      }
-    */
+    const membership = await membershipDAO.findByIdUpdate(req.status._id, {status: req.body.status});
+    res.status(200).json(membership); 
   } catch(e) {
-    console.log('In error', e.message);
-    /*
-    FIXED, adjusted orders model put brackets around everything after items instead of just the object
-      console.log
-      In error orders_new validation failed: items.0: Cast to [ObjectId] failed for value "[\n' +
-      "  { item: '6463d129d5c67a1ee45d463d' },\n" +
-      "  { item: '6463d129d5c67a1ee45d463e' }\n" +
-      ']" (type string) at path "items.0" because of "CastError"
-    */
+    console.log("ERROR: ", e);
+    next(e);
+  }
+}); // end PUT /:id
+
+// 12JUN passing tests
+// Create `POST /club/clubId/membership/` - only available to logged in users with a profile.  
+router.post("/", isLoggedIn, isExistenceOfClub, async (req, res, next) => {
+  //console.log('IN POST ');
+  //console.log('club: ', req.club);
+  next();
+}, hasProfile, isNewRequest, async (req, res, next) => {
+  //console.log('req.profile ', req.profile);
+  try {
+    const mbrRequest = {
+      profileId: req.profile._id,
+      clubId: req.club._id,
+      status: 'PENDING'
+    }
+    const membershipCreated = await membershipDAO.createItem(mbrRequest);
+    //console.log('created mbrship POST/ ', membershipCreated);
+    res.status(200).json(membershipCreated); 
+  } catch(e) {
+    //console.log('In error', e.message);
     res.status(400).send(e);
   }
 });
 
-// Create `POST /club/clubId/membership/profileId` - only available to logged in ADMIN
-router.post("/:id", isLoggedIn, async (req, res, next) => {
-  // only admin can create a request with another profile (not their own)
-  if ( !req.userId.roles.includes('admin') ) { 
-    // console.log('ACCESS ISSUE PROFILE');
-    res.status(401).send('Unable to create this request');
-  // else, you're admin, next()
-  } else {
-    // console.log(req.userId.roles, " ROLES");
-    next();
-  }
-}, async (req, res, next) => {  
-
-}, async (req, res, next) => {
-
-});
-
 //  Read Status of a request IF ADMIN OR THAT USER
 router.get("/:id", isLoggedIn, isWithRoles, isExistenceOfClub, async (req, res, next) => {
+  // if admin, assign profileId if the profile exists:
   if (req.roles.includes('admin')){
-    try {
-      // console.log(requestedProfile); // items is empty?!
-      const membershipStatus = await membershipDAO.getStatus(req.params.id, req.club._id)
-      res.status(200).json(membershipStatus); 
-    } catch (error) {
-      next(error);
-    }  
-  } else {
-    next();
-  }
-}, hasProfile, async (req, res, next) => {
-  try {
-    const { userId } = await profileDAO.findById(req.params.id);
-    if (!userId) {
-      res.status(401).json("Attempting to access someone else's record.");
+    // use the params id, not the logged in administrators
+    const profile = await profileDAO.findById(req.params.id);
+    if (!profile) {
+      res.status(401).send('User has no profile, no requests available');
     } else {
-      if (req.userId===userId) {
-        try {
-          // console.log(requestedProfile); // items is empty?!
-          const membershipStatus = await membershipDAO.getStatus(req.params.id, req.club._id)
-          res.status(200).json(membershipStatus); 
-        } catch (error) {
-          next(error);
-        }  
-      } else {
-        res.status(401).json("Attempting to access someone else's record"); 
-      }
+      req.profileId = profile._id;
+      next();
+    } 
+  // if not admin, get the userId (from token) DISREGARD params (in case they don't match)
+  } else {
+    const profile = await profileDAO.findByUserModelId(req.userId._id);
+    // will only look at user with token's membership requests
+    if (!profile) {
+      res.status(401).send('User has no profile, just an account');
+    } else {
+        req.profileId = profile._id;
+        next();
     }
-  } catch (error) {
-    next(error);
-  } 
+  }
+}, hasMbrRequest, async (req, res, next) => {
+  res.status(200).json(req.status); 
 }); // end GET /:id
 
 // `GET /members` for club, when logged in
-router.get("/", isLoggedIn, isExistenceOfClub, async (req, res, _next) => {
+// ADMIN and OWNERS get all requests for that club (future** 'RESCINDED' delete after some period of time or option to delete?)
+router.get("/", isLoggedIn, isExistenceOfClub, isWithRoles, async (req, res, next) => {
+  next();
+}, async (req, res, next) => {
+  // console.log('club exists');
   try {
-    const members = await membershipDAO.getMembers(req.club._id)
-    res.status(200).json(members); 
+    const members = await membershipDAO.getMembers(req.club._id);
+    if (members.length === 0) {
+      res.status(200).json("No Members of this Club"); 
+    } else {
+      res.status(200).json(members); 
+    }
   } catch (error) {
     res.status(500).json(error); 
   }

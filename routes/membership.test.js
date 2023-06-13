@@ -229,54 +229,65 @@ describe("/membership", () => {
       // console.log('test tokens: ', regularToken, ' ', clubToken, ' ', adminToken);
     });
     
+    // PUT /:id TEST COMPLETE, 12JUN complete
     describe('PUT /:id', () => {
       it('should update a membership request as admin', async () => {
         // create a regular request
-        await request(server)
+        const res1 = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
+        expect(res1.statusCode).toEqual(200);
+        expect(res1.body.status).toEqual('PENDING');
         // udpate the request just made
         const res2 = await request(server)
           .put("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + adminToken)
           .send({status: 'ACTIVE'});
         expect(res2.statusCode).toEqual(200);
-        // console.log("in test", res2.body);
         expect(res2.body.status).toEqual('ACTIVE');
       });
-      it('should not update a membership request regular user', async () => {
+      it('should not update a membership request if just a regular user', async () => {
         // create a regular request
-        await request(server)
+        const res1 = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
-        const res = await request(server)
+        expect(res1.statusCode).toEqual(200);
+        expect(res1.body.status).toEqual('PENDING');
+        const res2 = await request(server)
           .put("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + regularToken)
           .send({status: 'ACTIVE'});
-        expect(res.statusCode).toEqual(401);
+          const membershipR = await Membership.findOne({ profileId : profileR._id });
+          // console.log('IN TEST MbrshipR ');
+          // console.log(membershipR);
+        expect(res2.statusCode).toEqual(401);
+        expect(membershipR.status).toEqual('PENDING');
       });
       it('should update a membership request if owner of club', async () => {
         // create a regular request
-        await request(server)
+        const res1 = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
-        const res = await request(server)
+        expect(res1.statusCode).toEqual(200);
+        expect(res1.body.status).toEqual('PENDING');
+        const res2 = await request(server)
           .put("/club/"+ clubH._id +"/membership/" + profileR._id)
           .set('Authorization', 'Bearer ' + clubToken)
           .send({status: 'ACTIVE'});
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.status).toEqual('ACTIVE');
+        expect(res2.statusCode).toEqual(200);
+        expect(res2.body.status).toEqual('ACTIVE');
       });
     });
 
     describe('GET /:id', () => {
       it('should return a membership status if same member', async () => {
+        // console.log('IN TEST, profileId ', profileR._id);
         const res = await request(server)
           .get("/club/"+ clubH._id +"/membership/" + profileR._id)
-          .set('Authorization', 'Bearer ' + clubToken)
+          .set('Authorization', 'Bearer ' + regularToken)
           .send();
         expect(res.statusCode).toEqual(200);
       });
@@ -290,9 +301,9 @@ describe("/membership", () => {
       it('should not return a membership status if not same member', async () => {
         const res = await request(server)
           .get("/club/"+ clubH._id +"/membership/" + profileR._id)
-          .set('Authorization', 'Bearer ' + regularToken)
+          .set('Authorization', 'Bearer ' + clubToken)
           .send();
-        expect(res.statusCode).toEqual(200);
+        expect(res.statusCode).toEqual(401);
       });
     });
 
@@ -306,7 +317,7 @@ describe("/membership", () => {
           .send();
         expect(res.statusCode).toEqual(200);
       });
-      it('should get all members of a club as regular user', async () => {
+      it('should get all members of a club as regular user (only active mbrs)', async () => {
         // console.log('get test as reg user');
         const res = await request(server)
           //.get("/club/:clubId/membership")
@@ -318,12 +329,17 @@ describe("/membership", () => {
     });
 
     describe('POST /', () => {
+      beforeEach(async () => {
+        // clear all the requests for just this test ( POST / )
+        await Membership.deleteMany();
+      });
       it('should create membership request for regular users', async () => {
         const res = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
         expect(res.statusCode).toEqual(200);
+        expect(res.body.status).toEqual('PENDING');
         //
       });
       it('should not create duplicate requests', async () => {
@@ -335,13 +351,18 @@ describe("/membership", () => {
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
-        expect(res2.statusCode).toEqual(401);
+        const memberships = await Membership.find().lean();
+        // console.log('IN TEST POST IN LJKLJL ', memberships);
+        expect(memberships.length).toEqual(1); // would be two if both requests were created
+        expect(res1.statusCode).toEqual(200); // should be successful
+        expect(res1.body.status).toEqual('PENDING'); // new PENDING status
+        expect(res2.statusCode).toEqual(401); // should NOT be sucessful
         //
       });
       it('should not allow users without a profile to create a request', async () => {
         const res = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
-          .set('Authorization', 'Bearer ' + adminToken)
+          .set('Authorization', 'Bearer ' + adminToken) // remember the admin user doesn't have a profile
           .send();
         expect(res.statusCode).toEqual(401);
       });
