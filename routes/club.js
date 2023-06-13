@@ -6,7 +6,7 @@ const isLoggedIn = require('../middleware/isLoggedInProfile');
 const router = Router();
 
 //  Update Club Info? not sure i want to use this
-router.post("/:id", isLoggedIn, async (req, res, next) => {
+router.put("/:id", isLoggedIn, async (req, res, next) => {
   if ( !req.userId.roles.includes('admin') ) { 
     // console.log('HERE IN not admin');
     res.status(401).send('Unable to Access');
@@ -23,23 +23,8 @@ router.post("/:id", isLoggedIn, async (req, res, next) => {
       next(e);
     }
   // Update only address
-  } else {
-    const { address } = req.body;
-    // console.log('whole body: ', req.body, ' address: ', address);
-    
-    if (!address) {
-      res.status(401).send('Only able to update address field');
-    } else {
-      try {
-        const profileChanges = await profileDAO.findByIdUpdate(req.params.id, address);
-        res.status(200).json(profileChanges); 
-      } catch(e) {
-        console.log("ERROR: ", e);
-        next(e);
-      }
-    }
   } 
-}); // end POST /:id
+}); // end PUT /:id
 
 // Create `POST /club` - only available to ADMIN
 router.post("/", isLoggedIn, async (req, res, next) => {
@@ -88,30 +73,33 @@ router.post("/", isLoggedIn, async (req, res, next) => {
     const clubCreated = await clubDAO.create(newClub); 
     // console.log('HERE CLUB ROUTE: ', clubCreated);
     res.status(200).json(clubCreated); 
-    /*
-    FIXED, ugh, update the index routes 
-    In error club validation failed: name: Path `name` is required., userId: Path `userId` 
-    is required.
-    */
-    /*
-      item order created {
-      userId: '6463d4a2b24d345ef8ed1019',
-      items: [ new ObjectId("6463d4a2b24d345ef8ed1011") ],
-      total: 1
-      }
-    */
   } catch(e) {
     console.log('In error', e.message);
-    /*
-    FIXED, adjusted orders model put brackets around everything after items instead of just the object
-      console.log
-      In error orders_new validation failed: items.0: Cast to [ObjectId] failed for value "[\n' +
-      "  { item: '6463d129d5c67a1ee45d463d' },\n" +
-      "  { item: '6463d129d5c67a1ee45d463e' }\n" +
-      ']" (type string) at path "items.0" because of "CastError"
-    */
     res.status(400).send(e);
   }
+});
+
+// Read - most mbrs by requested city
+router.get("/mostMembers", async (req, res, next) => {
+  let { page, perPage, query } = req.query;
+  console.log('in most members route', query);
+  page = page ? Number(page) : 0;
+  perPage = perPage ? Number(perPage) : 10;
+  // console.log(query);
+  // const searchResults = await clubDAO.mostMembers(page, perPage, clubIds);
+  // in future by city
+  const searchResults = await clubDAO.mostMembers(page, perPage, query);
+  res.json(searchResults);
+});
+
+// Read - search all club
+router.get("/search", async (req, res, next) => {
+  let { page, perPage, query } = req.query;
+  page = page ? Number(page) : 0;
+  perPage = perPage ? Number(perPage) : 10;
+  // console.log(query);
+  const searchResults = await clubDAO.search(page, perPage, query);
+  res.json(searchResults);
 });
 
 //  Get specific profile for all users, even when not logged in
@@ -135,4 +123,5 @@ router.get("/", async (req, res, _next) => {
     res.status(500).json(error); 
   }
 });
+
 module.exports = router;

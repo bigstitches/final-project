@@ -8,14 +8,19 @@ const clubDAO = require('../daos/club');
 router.use("/", async (req, res, next) => {
   const regex = /\/club\/(.*?)\/membership/;
   let match = req.baseUrl.match(regex);
-  const club = await clubDAO.getById(match[1]);
-  // console.log('ISAUTHORIZEDOrdes: ', roles);
+  try {
+    const club = await clubDAO.getById(match[1]);
+    // console.log('ISAUTHORIZEDOrdes: ', roles);
     if (!club) {
       res.status(401).send('Club Does not exist');
     } else {
       req.club = club;
       next();
     }
+  } catch {
+    res.status(401).send('Club Does not exist');
+  }
+  
 });
 
 module.exports = router;

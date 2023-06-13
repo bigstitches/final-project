@@ -1,16 +1,5 @@
-// Need a clubId (index: router.use("/club/:clubId/members", require('./members')))
-//    -  const clubId = req.params.clubId;
-// Regular user can see all members
-// Club owner user can see all REQUESTS
-// Club owner can change status of member requests to APPROVED
-//    - approved requests will ADD the user to the club model members array
-// Club owner can change status of member requests to DENIED
-// Regular user can CREATE a membership request (initial status is set to PENDING)
-
 const { Router } = require("express");
-// const mongoose = require("mongoose");
 const profileDAO = require('../daos/profile');
-const clubDAO = require('../daos/club');
 const membershipDAO = require('../daos/membership');
 const isLoggedIn = require('../middleware/isLoggedInProfile');
 const isWithRoles = require('../middleware/isWithRoles');
@@ -128,7 +117,10 @@ router.get("/", isLoggedIn, isExistenceOfClub, isWithRoles, async (req, res, nex
   }
 });
 
-//  Remove a member from the club and change status to rescinded
+// Remove a member from the club and change status to rescinded
+// ADMIN/OWNERS can change status to RESCINDED and remove them from the club array
+// users with a request (in form of profileid) can change their own request to rescinded
+// and remove themselves from the club membership 
 // ** NEEDS ERROR HANDLING
 router.delete("/:id", isLoggedIn, isExistenceOfClub, async (req, res, _next) => {
   //console.log('IN DELETE: ', match[1]); // the club works

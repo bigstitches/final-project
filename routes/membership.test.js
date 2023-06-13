@@ -333,13 +333,22 @@ describe("/membership", () => {
         // clear all the requests for just this test ( POST / )
         await Membership.deleteMany();
       });
-      it('should create membership request for regular users', async () => {
+      it('should create membership request for regular users with a profile', async () => {
         const res = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
         expect(res.statusCode).toEqual(200);
         expect(res.body.status).toEqual('PENDING');
+        //
+      });
+      it('should NOT allow regular users to create requests to FAKE/non-existent clubs', async () => {
+        const res = await request(server)
+          .post("/club/"+ "TRASH" +"/membership/")
+          .set('Authorization', 'Bearer ' + regularToken)
+          .send();
+        expect(res.statusCode).toEqual(401);
+        // expect(res.body.status).toEqual('PENDING');
         //
       });
       it('should not create duplicate requests', async () => {
@@ -359,7 +368,7 @@ describe("/membership", () => {
         expect(res2.statusCode).toEqual(401); // should NOT be sucessful
         //
       });
-      it('should not allow users without a profile to create a request', async () => {
+      it('should NOT allow users without a profile to create a request', async () => {
         const res = await request(server)
           .post("/club/"+ clubH._id +"/membership/")
           .set('Authorization', 'Bearer ' + adminToken) // remember the admin user doesn't have a profile

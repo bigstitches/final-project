@@ -19,7 +19,7 @@ const profileSchema = new mongoose.Schema({
   address: { type: String, required: true },
   //callSign: { type: String, required: true, unique: true },
   callSign: { type: String, required: true },
-  licenseClass: { type:String, required: true }
+  licenseClass: { type:String, required: true, index: true }
 });
 
 

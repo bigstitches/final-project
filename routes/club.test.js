@@ -3,6 +3,7 @@
 // only admin can create a profile
 // an operator can change their own address
 const request = require("supertest");
+const mongoose = require('mongoose');
 
 const server = require("../server");
 const testUtils = require('../test-utils');
@@ -10,6 +11,7 @@ const testUtils = require('../test-utils');
 const User = require('../models/user');
 const Profile = require('../models/profile');
 const Club = require('../models/club');
+const { ObjectId } = require("mongodb");
 
 describe("/profile", () => {
 
@@ -78,35 +80,165 @@ describe("/profile", () => {
         expect(res.statusCode).toEqual(401);
       });
     });
-    /*
-    describe('POST /:id', () => {
-      it('should send 401 without a token', async () => {
-        const res = await request(server).post("/profile/123").send(profile0);
-        expect(res.statusCode).toEqual(401);
+
+    describe("GET /search", () => {
+      beforeEach(async () => {
+        let idObjectTest = [];
+        for (let i = 0; i < 10; i++) {
+          idObjectTest[i] = new mongoose.Types.ObjectId();
+        }
+        const testClubs = [
+          { 
+            userId: [idObjectTest[0]],
+            name: 'Mercer Island',
+            address: address1, //Mukilteo
+            members: [idObjectTest[0]]
+          },
+          {
+            userId: [idObjectTest[1], idObjectTest[2]],
+            name: 'Mercer',
+            address: address2, // city Renton
+            members: [idObjectTest[2]]
+          },
+          {
+            userId: [idObjectTest[3]],
+            name: 'Renton',
+            address: address1, //Mukilteo
+            members: [idObjectTest[3]]
+          },
+          {
+            userId: [idObjectTest[4]],
+            name: 'Highline Island',
+            address: address2, // city Renton
+            members: [idObjectTest[6], idObjectTest[7], idObjectTest[8]]
+          }
+        ]
+        const clubs = await Club.insertMany(testClubs);
+        // console.log(clubs);
       });
-      it('should send 401 with a bad token', async () => {
-        const res = await request(server)
-          .post("/profile/456")
-          .set('Authorization', 'Bearer BAD')
-          .send();
-        expect(res.statusCode).toEqual(401);
+      afterEach( async () => {
+        await Club.deleteMany();
+      });
+
+      it("should return one matching club", async () => {
+        const searchTerm = 'Renton'
+        const res = await request(server).get("/club/search?query=" + encodeURI(searchTerm));
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(3);
+        expect(res.body[0].address.city).toEqual(searchTerm);
+        expect(res.body[1].name).toEqual(searchTerm);
+      });
+      it("should return two matching clubs sorted by best matching single term", async () => {
+        const searchTerm = 'Mercer'
+        const res = await request(server).get("/club/search?query=" + encodeURI(searchTerm));
+        expect(res.statusCode).toEqual(200);
+        expect(res.body[0].name).toEqual('Mercer');
+        expect(res.body[1].name).toEqual('Mercer Island');
       });
     });
-    describe('GET /', () => {
-      it('should send 200 without a token', async () => {
-        const res = await request(server).get("/profile").send(profile0);
-        expect(res.statusCode).toEqual(200);
+
+    describe("GET /mostMembers", () => {
+      beforeEach(async () => {
+        let idObjectTest = [];
+        for (let i = 0; i < 10; i++) {
+          idObjectTest[i] = new mongoose.Types.ObjectId();
+        }
+        const testClubs = [
+          { 
+            userId: [idObjectTest[0]],
+            name: 'Cool Club',
+            address: address1, //Mukilteo
+            members: [idObjectTest[0]]
+          },
+          {
+            userId: [idObjectTest[1], idObjectTest[2]],
+            name: 'Members not Added',
+            address: address2, //Rengon
+            members: [idObjectTest[2], idObjectTest[1]]
+          },
+          {
+            userId: [idObjectTest[3]],
+            name: 'Hammy Whammy',
+            address: address1, //Mukilteo
+            members: [idObjectTest[3]]
+          },
+          {
+            userId: [idObjectTest[4]],
+            name: 'BLTs',
+            address: address1, //Mukilteo
+            members: [idObjectTest[6], idObjectTest[7]]
+          }
+        ]
+        const clubs = await Club.insertMany(testClubs);
       });
-      it('should send 200 with a bad token', async () => {
+      afterEach(async () => {
+        // clean up
+        await Club.deleteMany({});
+      })
+      it('should return the club with the most members', async () => {
+        // const clubsList = await Club.find().lean();
+        const searchTerm = 'Mukilteo'
         const res = await request(server)
-          .get("/profile")
-          .set('Authorization', 'Bearer BAD')
+          .get("/club/mostMembers?query="+ encodeURI(searchTerm))
           .send();
+        console.log('In most members test ', res.body);
         expect(res.statusCode).toEqual(200);
+        expect(res.body[0].totalMembers).toEqual(3); // total clubs
+        expect(res.body[0].names.length).toEqual(3); // 3/4 clubs in Mukilteo
+        //expect(res.body.length).toEqual(4);
       });
     });
-    */
   
+    describe("GET /", () => {
+      beforeEach(async () => {
+        let idObjectTest = [];
+        for (let i = 0; i < 10; i++) {
+          idObjectTest[i] = new mongoose.Types.ObjectId();
+        }
+        const testClubs = [
+          { 
+            userId: [idObjectTest[0]],
+            name: 'Mercer Island',
+            address: address1,
+            members: [idObjectTest[0]]
+          },
+          {
+            userId: [idObjectTest[1], idObjectTest[2]],
+            name: 'Mercer',
+            address: address2,
+            members: [idObjectTest[2]]
+          },
+          {
+            userId: [idObjectTest[3]],
+            name: 'Renton',
+            address: address1,
+            members: [idObjectTest[3]]
+          },
+          {
+            userId: [idObjectTest[4]],
+            name: 'Highline Island',
+            address: address2,
+            members: [idObjectTest[6], idObjectTest[7], idObjectTest[8]]
+          }
+        ]
+        const clubs = await Club.insertMany(testClubs);
+      });
+      afterEach(async () => {
+        // clean up
+        await Club.deleteMany({});
+      })
+      it('should send 200 when not logged in and return clubs', async () => {
+        const clubsList = await Club.find().lean();
+        const res = await request(server)
+          .get("/club")
+          .send();
+        expect(res.statusCode).toEqual(200);
+        expect(res.body[1].name).toEqual(clubsList[1].name);
+        expect(res.body.length).toEqual(4);
+      });
+    });
+
+    
   });
 
   describe('after login', () => {
