@@ -28,6 +28,12 @@ AUTHENTICATION
 - Clubs can create events (CREATE), (UPDATE) and (DELETE)
 - Clubs can (UPDATE) their membership list
 - "ADMIN" (ARRL) can (CREATE) members and (CREATE) clubs and (POST) 
+LOOKUP:
+- /profile/requests - uses LOOKUP to get all the matching requests in membership
+SEARCH/INDEX:
+- /club/search - address city is indexed so it can be searched
+AGGREGATE:
+- /club/mostmembers - the clubs, by city, will be listed with most members to least
 
 ROUTES (UPDATED):
   CLUB (represents ham operator clubs)

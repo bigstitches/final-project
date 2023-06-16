@@ -14,11 +14,14 @@ router.use("/", async (req, res, next) => {
   if (!status) {
     // good, brand new status can be made
     next();
+    /*
+    future
   } else if (status === 'RESCINDED') {
     // maybe add some wait period here...
     next();
   } else if (status === 'ACTIVE') {
     res.status(401).send('User is already a member');
+    */
   } else {
     res.status(401).send('User has a pending request');
   }

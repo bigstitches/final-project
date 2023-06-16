@@ -2,11 +2,12 @@ const { Router } = require("express");
 // const mongoose = require("mongoose");
 const profileDAO = require('../daos/profile');
 const isLoggedIn = require('../middleware/isLoggedInProfile');
+const hasProfile = require('../middleware/hasProfile');
 const router = Router();
 
 //  Update a specific profile; ADMIN can Update All; user can update their own address
 //  middleware to check body for any info REQUIRED
-router.post("/:id", isLoggedIn, async (req, res, next) => {
+router.put("/:id", isLoggedIn, async (req, res, next) => {
   // console.log("REQ.USERID._ID ", req.userId._id);
   // console.log("REQ.Params.id ", req.params.id);
   // console.log("req.userId.roles ", req.userId.roles);
@@ -93,34 +94,18 @@ router.post("/", isLoggedIn, async (req, res, next) => {
     // console.log('item order created', newOrder);
     const itemCreated = await profileDAO.createItem(newProfile); 
     res.status(200).json(itemCreated); 
-    /*
-      item order created {
-      userId: '6463d4a2b24d345ef8ed1019',
-      items: [ new ObjectId("6463d4a2b24d345ef8ed1011") ],
-      total: 1
-      }
-    */
   } catch(e) {
     console.log('In error', e.message);
-    /*
-    FIXED, adjusted orders model put brackets around everything after items instead of just the object
-      console.log
-      In error orders_new validation failed: items.0: Cast to [ObjectId] failed for value "[\n' +
-      "  { item: '6463d129d5c67a1ee45d463d' },\n" +
-      "  { item: '6463d129d5c67a1ee45d463e' }\n" +
-      ']" (type string) at path "items.0" because of "CastError"
-    */
     res.status(400).send(e);
   }
 });
 
 // HW Requirement
-// STILL NEED TO ADD ADMINNNNNN
-router.get("email/:id", async (req, res, next) => {
-  console.log('In profile ROUTE ', req.params.id);
+router.get("/requests", isLoggedIn, hasProfile, async (req, res, next) => {
+  // get logged in user/profile membership requests
   try {
+    const requestedProfile = await profileDAO.requestsNameCallSignbyProfile(req.profile._id);
     // console.log(requestedProfile); // items is empty?!
-    const requestedProfile = await profileDAO.findEmailByProfileId(req.params.id);
     res.status(200).json(requestedProfile); 
   } catch (error) {
     // console.log(error);

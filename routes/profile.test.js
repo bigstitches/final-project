@@ -9,11 +9,20 @@ const testUtils = require('../test-utils');
 
 const User = require('../models/user');
 const Profile = require('../models/profile');
+const Club = require('../models/club');
+const Membership = require('../models/membership');
 
 describe("/profile", () => {
   beforeAll(testUtils.connectDB);
   afterAll(testUtils.stopDB);
   afterEach(testUtils.clearDB);
+
+  const address1 = { 
+    address: '1983 44th ave SW', 
+    city: 'Mukilteo',
+    state: 'WA',
+    zip: 98166
+  };
 
   const profile0 = { 
     name: 'Operator One', 
@@ -123,12 +132,12 @@ describe("/profile", () => {
       testProfile0 = await Profile.create(profile0);
       testProfile1 = await Profile.create(profile1);
       //profiles = (await Profile.insertMany([profile0, profile1])).map(i => i.toJSON());
-      // console.log('IIIIN TEST', testProfile1);
+      //console.log('IIIIN PROFILE0', testProfile0);
     });
     afterEach(async () => {
       await Profile.deleteMany({});
     });
-    describe("POST /:id", () => {
+    describe("PUT /:id", () => {
       
       beforeEach(async () => {
   
@@ -154,7 +163,7 @@ describe("/profile", () => {
         // console.log('TESTPROF0._id ', testProf0._id.toString());
         // console.log('TEST admin token ', adminToken);
         const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
+          .put("/profile/" + testProf0._id.toString())
           .set('Authorization', 'Bearer ' + adminToken)
           .send(updateCallSign1);
         expect(res.statusCode).toEqual(200);
@@ -162,14 +171,14 @@ describe("/profile", () => {
       });
       it('should send 401 to non-admin user trying to update the wrong profile', async () => {
         const res = await request(server)
-          .post("/profile/" + testProf1._id.toString())
+          .put("/profile/" + testProf1._id.toString())
           .set('Authorization', 'Bearer ' + token0)
           .send(updateCallSign1);
         expect(res.statusCode).toEqual(401);
       });
       it('should send 401 to the correct user trying to update something other than address', async () => {
         const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
+          .put("/profile/" + testProf0._id.toString())
           .set('Authorization', 'Bearer ' + token0)
           .send(updateName0);
           //console.log('IN TEST NAME: ', res.body.name);
@@ -177,7 +186,7 @@ describe("/profile", () => {
       });
       it('should send 200 to the correct user trying to update an address', async () => {
         const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
+          .put("/profile/" + testProf0._id.toString())
           .set('Authorization', 'Bearer ' + token0)
           .send(updateAddress0);
         expect(res.statusCode).toEqual(200);
@@ -206,6 +215,69 @@ describe("/profile", () => {
       });
     });
 
+    describe("GET /requests", () => {
+      let clubHIGHLINE, clubMERCER, clubH, clubM;
+      let membership1, membership2, membership3, membership4;
+
+      beforeEach(async () => {
+        clubHIGHLINE = { 
+          userId: testProfile0._id,
+          name: 'Highline',
+          address: address1,
+        };
+        clubMERCER = { 
+          userId: testProfile0._id,
+          name: 'Mercer',
+          address: address1,
+        };
+        clubH = await Club.create(clubHIGHLINE);
+        clubM = await Club.create(clubMERCER);
+
+        membership1 = {
+          profileId: testProfile0._id,
+          clubId: clubH._id,
+          status: 'PENDING',
+        }
+        membership2 = {
+          profileId: testProfile0._id,
+          clubId: clubM._id,
+          status: 'ACTIVE',
+        }
+        membership3 = {
+          profileId: testProfile0._id,
+          clubId: clubH._id,
+          status: 'RESCINDED',
+        }
+        membership4 = {
+          profileId: testProfile1._id,
+          clubId: clubM._id,
+          status: 'ACTIVE',
+        }
+        await Membership.create(membership2);
+        await Membership.create(membership1);
+        //await Membership.insertMany([membership1, membership2, membership3, membership4]);
+        //console.log('memberhip asking to make? ', membership1);
+
+      })
+      afterEach(async () => {
+        Membership.deleteMany({});
+        Club.deleteMany({});
+      })
+      it('should send 200 and get a profile', async () => {
+        const testme = await Membership.find({profileId : testProfile0._id}).lean();
+        // console.log('IN TEST !!! ', testme, " With ID: ", testProfile0._id);
+        // this is just set-up
+        const res = await request(server)
+          .get("/profile/requests/")
+          .set('Authorization', 'Bearer ' + token0) 
+          .send();
+        // console.log('IN GET REQUESTS TEST: ', res.body)
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(2);
+        expect(res.body[0].memberships.status).toEqual('ACTIVE');
+      });
+    });
+
     describe("GET /:id", () => {
       it('should send 200 and get a profile', async () => {
         // this is just set-up
@@ -229,13 +301,6 @@ describe("/profile", () => {
         // console.log('IN GET TEST: ', res.body)
         expect(res.statusCode).toEqual(200);
         expect(res.body.name).toEqual(int1.body.name);
-        /*
-        expect(res.body.userId).toEqual(testProfile1.userId.toString());
-        expect(res.body.name).toEqual(testProfile1.name);
-        expect(res.body.address).toEqual(testProfile1.address);
-        expect(res.body.callSign).toEqual(testProfile1.callSign);
-        expect(res.body.licenseClass).toEqual(testProfile1.licenseClass);
-        */
       });
     });
 /*

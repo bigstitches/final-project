@@ -321,7 +321,7 @@ describe("/membership", () => {
         //console.log('in test create request ', re1.body);
         await Membership.findByIdAndUpdate(re1.body._id, { status: 'ACTIVE' });
         const updClub = await Club.findByIdAndUpdate(re1.body.clubId, { $push : { members : re1.body.profileId}});
-        console.log('IN RES CLUB ', updClub);
+        // console.log('IN RES CLUB ', updClub);
         const res = await request(server)
           //.get("/club/:clubId/membership")
           .get("/club/"+ clubH._id +"/membership")
@@ -341,13 +341,13 @@ describe("/membership", () => {
         //console.log('in test create request ', re1.body);
         await Membership.findByIdAndUpdate(re1.body._id, { status: 'ACTIVE' });
         const updClub = await Club.findByIdAndUpdate(re1.body.clubId, { $push : { members : re1.body.profileId}});
-        console.log('IN RES CLUB ', updClub);
+        //console.log('IN RES CLUB ', updClub);
         const res = await request(server)
           //.get("/club/:clubId/membership")
           .get("/club/"+ clubH._id +"/membership")
           .set('Authorization', 'Bearer ' + regularToken)
           .send();
-        console.log("IN GET ALL TEST ", res.body);
+        //console.log("IN GET ALL TEST ", res.body);
         expect(res.body.length).toEqual(1);
         expect(res.statusCode).toEqual(200);
       });

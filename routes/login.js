@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const router = Router();
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = 'JSoNToKen45OO!GoTeam';
+const User = require('../models/user');
 
 const isLoggedIn = require('../middleware/isLoggedIn')
 const hashPassword = require('../middleware/hashPassword')
@@ -19,6 +20,26 @@ router.get('/', (req, res, next) => {
   }
 });
 
+// Form to SignUp
+/*
+router.put('/makeAdmin', isLoggedIn, async (req, res, next) => {
+  try {
+    //req.userId = _id;
+    const newUser = await User.findByIdAndUpdate(req.userId, {roles: ['admin']});
+    //await 
+    //const token = res.body.token;
+    //const decodedToken = jwt.decode(token);
+    //expect(decodedToken.email).toEqual(user.email);
+    //expect(decodedToken.roles).toEqual(['user']);
+    //expect(decodedToken._id).toMatch(/^(?=[a-f\d]{24}$)(\d+[a-f]|[a-f]+\d)/i) // mongo _id regex
+    //expect(decodedToken.password).toBeUndefined();
+    res.status(200).send(newUser);
+  } catch(e) {
+      console.error(e);
+      next(e);
+  }
+});
+*/
 // Signup; should use bcrypt on the incoming password. Store user with their email and 
 // encrypted password, handle conflicts when the email is already in use.
 router.post("/signup", async (req, res, next) => {
@@ -46,7 +67,7 @@ router.post("/signup", async (req, res, next) => {
       }
       try {
         const createdUser = await userDAO.createUser(newUser);
-        console.log("CREATED USER", createdUser);
+        // console.log("CREATED USER", createdUser);
         res.sendStatus(200);
         res.json(createdUser);
       } catch(e) {

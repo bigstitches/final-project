@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+//const club = require('../models/club');
 
 const Club = require('../models/club');
 
@@ -8,6 +9,12 @@ module.exports.create = async (club) => {
     const clubCreated = await Club.create( club );
     return clubCreated;
 }
+
+// find by ID, update profile
+module.exports.findByIdUpdate = async (userId, updates) => {
+    const club = await Club.findByIdAndUpdate(userId, updates, {new: true}).lean();
+    return club;
+  }
 
 module.exports.getAll = async () => {
     const clubs = await Club.find().lean();

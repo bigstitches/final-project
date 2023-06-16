@@ -12,6 +12,7 @@ router.use("/club/:clubId/membership", require('./membership'));
 // capture errors when the transactionid is not valid
 // use an error handling middleware - put it last
 router.use((err, _req, res, _next) => {
+  // console.log(err);
   if (err.message.includes("Cast to ObjetId failed")) {
       res.status(400).send('Invalid id provided');
   } else {

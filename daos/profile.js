@@ -1,4 +1,5 @@
 const Profile = require('../models/profile');
+const Membership = require('../models/membership');
 
 module.exports = {};
 
@@ -25,33 +26,40 @@ module.exports.findById = async (profId) => {
   return profile;
 }
 
-// find by order ID,return the user ID
-module.exports.findEmailByProfileId = async (profId) => {
+// find the membership requests of the logged in user
+module.exports.requestsNameCallSignbyProfile = async (profId) => {
+  //console.log( 'IN DAAASOOO: ', profId)
   //const profile = await Profile.findOne({ userId:profId }).lean();
+  //console.log("INN PROFILE DAOO"); { $match: { _id : profId } },         _id: 0,
   const profileEmailInfo = Profile.aggregate([
-    { $match: { userId : profId } },
+    { $match: { _id : profId } }, 
     {
       $lookup: {
-        from: 'users', // which schema to find
-        localField: 'userId', // field in the profile collection
-        foreignField: '_id', // field in the users colleciton
-        as: 'emailUserId'
+        from: 'memberships', // which schema to find
+        localField: '_id', // field in the profile collection
+        foreignField: 'profileId', // field in the membership colleciton
+        as: 'memberships'
       }
     },
     {
       $group: {
-        _id: '$userId', // from profile
-        email: { $push: '$emailUserId'},
+        _id: '$_id', // from profile
+        memberships: { $push: '$memberships'},
         callSign: { $push: '$callSign'},
         name: { $push: '$name'}
       }
     },
     {
+      $unwind: '$memberships'
+    },
+    {
+      $unwind: '$memberships'
+    },
+    {
       $project: {
-        _id: 0,
         name: '$name',
         callSign: '$callSign',
-        email: '$emailUserId',
+        memberships: '$memberships',
       }
     }
   ])

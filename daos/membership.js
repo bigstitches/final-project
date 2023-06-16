@@ -18,12 +18,13 @@ module.exports.createItem = async (newOrder) => {
   // console.log('DAOS profile, ', profile);
   return profile;
 }
-
+/*
 // find by order ID,return the user ID
 module.exports.findById = async (orderId) => {
   const order = await Membership.findOne({ _id:orderId }).lean();
   return order.userId;
 }
+*/
 
 //
 module.exports.findMatchUserAndProfile = async (userObjectId, orderId) => {
@@ -32,11 +33,12 @@ module.exports.findMatchUserAndProfile = async (userObjectId, orderId) => {
 }
 
 
-
+/*
 module.exports.findByIdAdmin = async (orderId) => {
   const order = await Membership.findOne({ _id:orderId }).lean();
   return order;
 }
+*/
 
 // ALL (even not logged in) can get all orders
 module.exports.getProfiles = () => {
@@ -46,9 +48,11 @@ module.exports.getProfiles = () => {
 /*
 * @params [ userObjectId ], input the user ObjectId to get all their orders
 */
+/*
 module.exports.getOrdersUser = async (userObjectId) => {
   return await Membership.find({userId : userObjectId});
 }
+*/
 
 
 //
@@ -72,11 +76,7 @@ module.exports.getStatus = async (profileId, clubId) => {
 //
 module.exports.getMembership = async (profileId, clubId) => {
   const mbrship = await Membership.findOne({ profileId:profileId, clubId:clubId }).lean();
-  if (!mbrship) {
-    return null;
-  } else {
-    return mbrship;
-  }
+  return mbrship;
 }
 
 // find by ID, update profile

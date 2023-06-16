@@ -7,4 +7,4 @@ const membershipSchema = new mongoose.Schema({
 });
 
 
-module.exports = mongoose.model("membership", membershipSchema);
+module.exports = mongoose.model("memberships", membershipSchema);

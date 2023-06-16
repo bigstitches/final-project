@@ -9,7 +9,7 @@ router.use("/", async (req, res, next) => {
   // console.log(req.userId);
   // console.log('In has Profile!');
   const profile = await profileDAO.findByUserModelId(req.userId._id);
-  // console.log('profile: ', profile);
+  //console.log('profile: ', profile);
   // console.log('ISAUTHORIZED', roles);
     if (!profile) {
       res.status(401).send('User has no profile, just an account');

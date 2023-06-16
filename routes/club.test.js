@@ -81,6 +81,7 @@ describe("/profile", () => {
       });
     });
 
+    // test search (required for project)
     describe("GET /search", () => {
       beforeEach(async () => {
         let idObjectTest = [];
@@ -135,8 +136,20 @@ describe("/profile", () => {
         expect(res.body[0].name).toEqual('Mercer');
         expect(res.body[1].name).toEqual('Mercer Island');
       });
+      it("should return NO clubs", async () => {
+        const searchTerm = 'BONKERVILLE'
+        const res = await request(server).get("/club/search?query=" + encodeURI(searchTerm));
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(0);
+      });
+      it("should return all clubs", async () => {
+        const res = await request(server).get("/club/search?query=");
+        expect(res.statusCode).toEqual(200);
+        expect(res.body.length).toEqual(4);
+      });
     });
 
+    // test aggregate, required for project
     describe("GET /mostMembers", () => {
       beforeEach(async () => {
         let idObjectTest = [];
@@ -275,68 +288,54 @@ describe("/profile", () => {
       //profiles = (await Profile.insertMany([profile0, profile1])).map(i => i.toJSON());
       // console.log('IIIIN TEST', testProfile1);
     });
-    /*
-    describe("POST /:id", () => {
-      let order0Id, order1Id;
+    
+    describe("PUT /:id", () => {
+      const nameChange = {"name": 'Mercer I-bands'};
+      const badData = {'pig': 'pen'};
       
       beforeEach(async () => {
-        //await request(server).post("/login/signup").send(user0);
-        //const res0 = await request(server).post("/login").send(user0);
-        //token0 = res0.body.token;
-        //await request(server).post("/login/signup").send(user1);
-        //await User.updateOne({ email: user1.email }, { $push: { roles: 'admin'} });
-        //const res1 = await request(server).post("/login").send(user1);
-        //adminToken = res1.body.token;
-  
         // associate profile0 with user0 and profile1 with user1
         const userId0 = (await User.findOne({ email: user0.email }))._id.toString();
         const userId1 = (await User.findOne({ email: user1.email }))._id.toString();
         profile0.userId = userId0;
         profile1.userId = userId1;
 
-        // console.log('TEST profile0: ', profile0);
-        // console.log('TEST profile1: ', profile1);
-
         testProf0 = await Profile.create(profile0);
         testProf1 = await Profile.create(profile1);
-        
-        // console.log('TEST created testProf0: ', testProf0);
-        // console.log('TEST created testProf1: ', testProf1);
       });
-      it('should send 200 to an admin and update a profile', async () => {
-        // console.log('TESTPROF0._id ', testProf0._id.toString());
-        // console.log('TEST admin token ', adminToken);
+      it('should send 200 to an admin and update a club', async () => {       
         const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
+          .put("/club/" + testClub1._id.toString())
           .set('Authorization', 'Bearer ' + adminToken)
-          .send(updateCallSign1);
+          .send(nameChange);
+          // console.log('IN TEST NAME: ', res.body);
         expect(res.statusCode).toEqual(200);
-        expect(res.body.callSign).toEqual('VANITY');
+        expect(res.body.name).toEqual('Mercer I-bands');
       });
-      it('should send 401 to non-admin user trying to update the wrong profile', async () => {
+      it('should send 401 to non-admin user trying to update a club', async () => {
         const res = await request(server)
-          .post("/profile/" + testProf1._id.toString())
+          .put("/club/" + testClub1._id.toString())
           .set('Authorization', 'Bearer ' + token0)
-          .send(updateCallSign1);
+          .send(nameChange);
+          // console.log('IN TEST NAME: ', res.body.name);
         expect(res.statusCode).toEqual(401);
       });
-      it('should send 401 to the correct user trying to update something other than address', async () => {
+      it('should send 401 to admin sending updates to non-existant club', async () => {
         const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
-          .set('Authorization', 'Bearer ' + token0)
-          .send(updateName0);
-          console.log('IN TEST NAME: ', res.body.name);
+          .put("/club/" + testProf0._id.toString()) // not a club
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send(nameChange);
         expect(res.statusCode).toEqual(401);
       });
-      it('should send 200 to the correct user trying to update an address', async () => {
-        const res = await request(server)
-          .post("/profile/" + testProf0._id.toString())
-          .set('Authorization', 'Bearer ' + token0)
-          .send(updateAddress0);
-        expect(res.statusCode).toEqual(200);
+      it('should send 401 to admin sending bad data', async () => {
+          const res = await request(server)
+            .put("/club/" + testProf0._id.toString()) // not a club
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(badData);
+        expect(res.statusCode).toEqual(401);
       });
     });
-    */
+    
     describe("POST /", () => {
       it('should send 200 to an admin and create a profile', async () => {
         const res = await request(server)
@@ -344,10 +343,6 @@ describe("/profile", () => {
           .set('Authorization', 'Bearer ' + adminToken)
           .send(club1);
         expect(res.statusCode).toEqual(200);
-        // const storedProfile = await Profile.findOne().lean();
-        // const storedProfile = await Profile.findById(profile1.userId).lean();
-        // console.log('IN TEsT res.body, ', res.body);
-        // console.log('testProfile, ', testProfile1);
         expect(res.body.userId).toEqual([testClub1.userId.toString()]);
         expect(res.body.name).toEqual(testClub1.name);
         // console.log('IN TEST ', res.body.address)
@@ -362,9 +357,16 @@ describe("/profile", () => {
       });
       it('should send 401 to non-admin user', async () => {
         const res = await request(server)
-          .post("/profile")
+          .post("/club")
           .set('Authorization', 'Bearer ' + token0)
           .send(club1);
+        expect(res.statusCode).toEqual(401);
+      });
+      it('should send 401 to admin with no club info', async () => {
+        const res = await request(server)
+          .post("/club")
+          .set('Authorization', 'Bearer ' + adminToken)
+          .send();
         expect(res.statusCode).toEqual(401);
       });
     });
